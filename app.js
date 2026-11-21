@@ -1,21 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getDatabase, ref, set, get, push, onValue, onChildAdded
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-// এখানে তোমার Firebase প্রজেক্টের Config বসাও
-const firebaseConfig = {
-  apiKey: "AIzaSyAZfaUMR_FZv0NSYargqKcxb_hGRo4NovA",
-  authDomain: "whatsweb-a479d.firebaseapp.com",
-  databaseURL: "https://whatsweb-a479d-default-rtdb.firebaseio.com",
-  projectId: "whatsweb-a479d",
-  storageBucket: "whatsweb-a479d.firebasestorage.app",
-  messagingSenderId: "218335816115",
-  appId: "1:218335816115:web:472b00bbeea084320b83c6"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+import { ref, set, get, push, onValue, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { db } from "./firebase-config.js";
+import { compressAvatar, compressChatPhoto, readMediaFile, formatFileSize } from "./media.js";
 
 // State
 let currentUser = null;
@@ -30,33 +15,15 @@ const appScreen = document.getElementById("app-screen");
 const authError = document.getElementById("auth-error");
 const loginForm = document.getElementById("login-form");
 const signupForm = document.getElementById("signup-form");
+const uploadStatus = document.getElementById("upload-status");
+const lightboxModal = document.getElementById("lightbox-modal");
+const lightboxImg = document.getElementById("lightbox-img");
 
 // Helper: SHA-256 Password Hashing
 async function hashPassword(password) {
   const data = new TextEncoder().encode(password);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-// Helper: Compress Profile Image to Base64 (120x120)
-function compressImage(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const size = 120;
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, size, size);
-        resolve(canvas.toDataURL("image/jpeg", 0.7));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
 }
 
 function defaultAvatar(uid) {
@@ -84,8 +51,12 @@ document.getElementById("tab-signup").onclick = () => {
 document.getElementById("signup-photo").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  uploadedPhotoBase64 = await compressImage(file);
-  document.getElementById("avatar-preview").src = uploadedPhotoBase64;
+  try {
+    uploadedPhotoBase64 = await compressAvatar(file);
+    document.getElementById("avatar-preview").src = uploadedPhotoBase64;
+  } catch (err) {
+    authError.textContent = err.message;
+  }
 });
 
 // Sign Up Handler
@@ -126,7 +97,7 @@ signupForm.addEventListener("submit", async (e) => {
 
   const userData = {
     userId: uid,
-    mobile: mobile,
+    mobile,
     passwordHash: await hashPassword(password),
     photo: uploadedPhotoBase64 || defaultAvatar(uid),
     createdAt: Date.now()
@@ -134,7 +105,6 @@ signupForm.addEventListener("submit", async (e) => {
 
   await set(ref(db, `users/${uid}`), userData);
   await set(ref(db, `mobile_lookup/${mobile}`), uid);
-
   loginSuccess(userData);
 });
 
@@ -195,7 +165,7 @@ function loadChatList() {
   unsubscribeChatList = onValue(ref(db, `user_chats/${currentUser.userId}`), async (snapshot) => {
     const data = snapshot.val();
     if (!data) {
-      listEl.innerHTML = `<p class="empty-hint">No chats yet. Click <strong>+</strong> to start messaging.</p>`;
+      listEl.innerHTML = `<p class="empty-hint">No chats yet. Tap <strong>+</strong> to start messaging.</p>`;
       return;
     }
 
@@ -229,7 +199,70 @@ function loadChatList() {
   });
 }
 
-// Open Chat Room & Load Message History + Real-Time Updates
+// Render Message Bubble (Text, Photo, Video, or Document)
+function renderMessage(msg, messagesBox) {
+  const div = document.createElement("div");
+  div.className = "msg " + (msg.sender === currentUser.userId ? "sent" : "received");
+
+  const type = msg.type || "text";
+
+  if (type === "image" && msg.fileData) {
+    const img = document.createElement("img");
+    img.src = msg.fileData;
+    img.className = "msg-photo";
+    img.alt = msg.fileName || "Photo";
+    img.onclick = () => {
+      lightboxImg.src = msg.fileData;
+      lightboxModal.classList.remove("hidden");
+    };
+    div.appendChild(img);
+  } else if (type === "video" && msg.fileData) {
+    const video = document.createElement("video");
+    video.src = msg.fileData;
+    video.className = "msg-video";
+    video.controls = true;
+    video.playsInline = true;
+    div.appendChild(video);
+  } else if (type === "document" && msg.fileData) {
+    const link = document.createElement("a");
+    link.href = msg.fileData;
+    link.download = msg.fileName || "document";
+    link.className = "msg-doc";
+
+    const icon = document.createElement("div");
+    icon.className = "doc-icon";
+    icon.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+
+    const meta = document.createElement("div");
+    meta.className = "doc-meta";
+
+    const name = document.createElement("div");
+    name.className = "doc-name";
+    name.textContent = msg.fileName || "Document";
+
+    const size = document.createElement("div");
+    size.className = "doc-size";
+    size.textContent = msg.fileSize ? `${msg.fileSize} • Tap to download` : "Tap to download";
+
+    meta.append(name, size);
+    link.append(icon, meta);
+    div.appendChild(link);
+  } else {
+    const textNode = document.createElement("span");
+    textNode.textContent = msg.text || "";
+    div.appendChild(textNode);
+  }
+
+  const timeNode = document.createElement("span");
+  timeNode.className = "msg-time";
+  timeNode.textContent = new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  div.appendChild(timeNode);
+  messagesBox.appendChild(div);
+  messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+// Open Chat Room
 function openChat(partnerData) {
   activePartner = partnerData;
   document.getElementById("no-chat-selected").classList.add("hidden");
@@ -247,52 +280,103 @@ function openChat(partnerData) {
 
   const roomId = [currentUser.userId, partnerData.userId].sort().join("_");
   unsubscribeMessages = onChildAdded(ref(db, `chats/${roomId}`), (snap) => {
-    const msg = snap.val();
-    const div = document.createElement("div");
-    div.className = "msg " + (msg.sender === currentUser.userId ? "sent" : "received");
-
-    const textNode = document.createElement("span");
-    textNode.textContent = msg.text;
-
-    const timeNode = document.createElement("span");
-    timeNode.className = "msg-time";
-    timeNode.textContent = new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-    div.append(textNode, timeNode);
-    messagesBox.appendChild(div);
-    messagesBox.scrollTop = messagesBox.scrollHeight;
+    renderMessage(snap.val(), messagesBox);
   });
 }
 
-// Send Message
-document.getElementById("message-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
+// Core Send Helper (supports text & media)
+async function pushMessage(payload, previewLabel) {
   if (!activePartner) return;
-
-  const input = document.getElementById("message-input");
-  const text = input.value.trim();
-  if (!text) return;
-
   const roomId = [currentUser.userId, activePartner.userId].sort().join("_");
   const now = Date.now();
 
   await push(ref(db, `chats/${roomId}`), {
     sender: currentUser.userId,
-    text: text,
-    timestamp: now
+    timestamp: now,
+    ...payload
   });
 
-  await set(ref(db, `user_chats/${currentUser.userId}/${activePartner.userId}`), {
-    lastMessage: text,
-    timestamp: now
-  });
-  await set(ref(db, `user_chats/${activePartner.userId}/${currentUser.userId}`), {
-    lastMessage: text,
-    timestamp: now
-  });
+  await Promise.all([
+    set(ref(db, `user_chats/${currentUser.userId}/${activePartner.userId}`), {
+      lastMessage: previewLabel,
+      timestamp: now
+    }),
+    set(ref(db, `user_chats/${activePartner.userId}/${currentUser.userId}`), {
+      lastMessage: previewLabel,
+      timestamp: now
+    })
+  ]);
+}
 
+// Send Text Message
+document.getElementById("message-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = document.getElementById("message-input");
+  const text = input.value.trim();
+  if (!text) return;
   input.value = "";
+  await pushMessage({ type: "text", text }, text);
 });
+
+// Wire up the 3 Media Icon Buttons
+const inputPhoto = document.getElementById("input-photo");
+const inputVideo = document.getElementById("input-video");
+const inputDoc = document.getElementById("input-doc");
+
+document.getElementById("btn-photo").onclick = () => inputPhoto.click();
+document.getElementById("btn-video").onclick = () => inputVideo.click();
+document.getElementById("btn-doc").onclick = () => inputDoc.click();
+
+async function handleMediaUpload(file, type) {
+  if (!file || !activePartner) return;
+  uploadStatus.textContent = `Sending ${type}...`;
+  uploadStatus.classList.remove("hidden");
+
+  try {
+    let fileData;
+    if (type === "image") {
+      fileData = await compressChatPhoto(file);
+    } else {
+      fileData = await readMediaFile(file);
+    }
+
+    const previewMap = {
+      image: "📷 Photo",
+      video: "🎥 Video",
+      document: `📄 ${file.name}`
+    };
+
+    await pushMessage(
+      {
+        type,
+        fileData,
+        fileName: file.name,
+        fileSize: formatFileSize(file.size)
+      },
+      previewMap[type]
+    );
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    uploadStatus.classList.add("hidden");
+  }
+}
+
+inputPhoto.onchange = (e) => {
+  handleMediaUpload(e.target.files[0], "image");
+  e.target.value = "";
+};
+inputVideo.onchange = (e) => {
+  handleMediaUpload(e.target.files[0], "video");
+  e.target.value = "";
+};
+inputDoc.onchange = (e) => {
+  handleMediaUpload(e.target.files[0], "document");
+  e.target.value = "";
+};
+
+// Close Lightbox on click
+lightboxModal.onclick = () => lightboxModal.classList.add("hidden");
 
 // Mobile Back Button
 document.getElementById("btn-back").onclick = () => {
