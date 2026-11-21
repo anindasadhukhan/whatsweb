@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatsWeb — Real-Time Messaging</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- AUTH SCREEN (Login / Sign Up) -->
+  <div id="auth-screen" class="auth-wrapper">
+    <div class="auth-card">
+      <div class="brand-header">
+        <div class="brand-logo">W</div>
+        <h1>WhatsWeb</h1>
+        <p>Simple & Fast Real-Time Messaging</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button id="tab-login" class="tab-btn active">Login</button>
+        <button id="tab-signup" class="tab-btn">Sign Up</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" class="auth-form">
+        <input type="text" id="login-identifier" placeholder="User ID or Mobile Number" required />
+        <input type="password" id="login-password" placeholder="Password" required />
+        <button type="submit" class="btn-primary">Login</button>
+      </form>
+
+      <!-- Sign Up Form -->
+      <form id="signup-form" class="auth-form hidden">
+        <div class="avatar-upload">
+          <img id="avatar-preview" src="https://ui-avatars.com/api/?name=W&background=FF7A00&color=fff" alt="Preview" />
+          <label for="signup-photo" class="upload-label">Choose Profile Photo</label>
+          <input type="file" id="signup-photo" accept="image/*" hidden />
+        </div>
+        <input type="text" id="signup-uid" placeholder="User ID (letters, numbers, _)" required />
+        <input type="tel" id="signup-mobile" placeholder="Mobile Number (10 digits)" required />
+        <input type="password" id="signup-password" placeholder="Password (min 6 chars)" required />
+        <button type="submit" class="btn-primary">Create Account</button>
+      </form>
+
+      <p id="auth-error" class="error-msg"></p>
+    </div>
+  </div>
+
+  <!-- MAIN APP SCREEN -->
+  <div id="app-screen" class="app-container hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <header class="sidebar-header">
+        <div class="user-profile">
+          <img id="my-avatar" src="" alt="Me" />
+          <div>
+            <h3 id="my-uid"></h3>
+            <span class="brand-tag">WhatsWeb</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="btn-new-chat" class="btn-icon" title="New Chat">+</button>
+          <button id="btn-logout" class="btn-logout" title="Logout">Logout</button>
+        </div>
+      </header>
+
+      <div id="chat-list" class="chat-list">
+        <p class="empty-hint">No chats yet. Click <strong>+</strong> to start messaging.</p>
+      </div>
+    </aside>
+
+    <!-- Chat Area -->
+    <main id="chat-area" class="chat-area">
+      <div id="no-chat-selected" class="no-chat-placeholder">
+        <div class="brand-logo large">W</div>
+        <h2>Welcome to WhatsWeb</h2>
+        <p>Select a conversation or start a new chat using User ID or Mobile Number.</p>
+      </div>
+
+      <div id="active-chat" class="active-chat hidden">
+        <header class="chat-header">
+          <button id="btn-back" class="btn-back">←</button>
+          <img id="partner-avatar" src="" alt="Partner" />
+          <div>
+            <h3 id="partner-uid"></h3>
+            <span id="partner-mobile" class="sub-text"></span>
+          </div>
+        </header>
+
+        <div id="messages-box" class="messages-box"></div>
+
+        <form id="message-form" class="message-input-area">
+          <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required />
+          <button type="submit" class="btn-send">Send</button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <!-- NEW CHAT MODAL -->
+  <div id="new-chat-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Start New Chat</h3>
+      <p>Enter receiver's User ID or Mobile Number:</p>
+      <input type="text" id="search-user-input" placeholder="e.g. aninda_01 or 9876543210" />
+      <p id="search-error" class="error-msg"></p>
+      <div class="modal-actions">
+        <button id="btn-cancel-modal" class="btn-secondary">Cancel</button>
+        <button id="btn-start-chat" class="btn-primary">Start Chat</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
