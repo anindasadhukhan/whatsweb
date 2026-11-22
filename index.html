@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
 
@@ -95,7 +95,7 @@
         <!-- Upload Progress Indicator -->
         <div id="upload-status" class="upload-status hidden">Sending attachment...</div>
 
-        <!-- Message Input Bar with 3 Media Icons on the Left -->
+        <!-- Message Input Bar -->
         <form id="message-form" class="message-input-area">
           <div class="media-actions">
             <!-- Photo Icon -->
@@ -131,6 +131,7 @@
 
           <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" />
 
+          <!-- Mic Button -->
           <button type="button" id="btn-mic" class="btn-mic" title="Record Voice Message" aria-label="Record Voice Message">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -148,6 +149,7 @@
           </button>
         </form>
 
+        <!-- Voice Recording Bar -->
         <div id="recording-bar" class="recording-bar hidden">
           <button type="button" id="btn-rec-cancel" class="btn-rec-cancel" title="Cancel">✕</button>
           <div class="rec-indicator">
@@ -162,14 +164,6 @@
             </svg>
           </button>
         </div>
-
-          <button type="submit" class="btn-send" title="Send" aria-label="Send">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-          </button>
-        </form>
       </div>
     </main>
   </div>
@@ -193,6 +187,6 @@
     <img id="lightbox-img" class="lightbox-img" src="" alt="Full preview" />
   </div>
 
-  <script type="module" src="app.js?v=3"></script>
+  <script type="module" src="app.js?v=4"></script>
 </body>
 </html>
