@@ -1,6 +1,7 @@
 import { ref, set, get, push, onValue, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { db } from "./firebase-config.js";
 import { compressAvatar, compressChatPhoto, readMediaFile, formatFileSize } from "./media.js";
+import { createVoiceRecorder, formatDuration } from "./voice.js";
 
 // State
 let currentUser = null;
@@ -247,7 +248,15 @@ function renderMessage(msg, messagesBox) {
     meta.append(name, size);
     link.append(icon, meta);
     div.appendChild(link);
-  } else {
+  
+  } else if (type === "audio" && msg.fileData) {
+    const audio = document.createElement("audio");
+    audio.src = msg.fileData;
+    audio.controls = true;
+    audio.className = "msg-audio";
+    div.appendChild(audio);
+  } 
+  else {
     const textNode = document.createElement("span");
     textNode.textContent = msg.text || "";
     div.appendChild(textNode);
@@ -426,6 +435,65 @@ document.getElementById("btn-start-chat").onclick = async () => {
   modal.classList.add("hidden");
   openChat(uSnap.val());
 };
+
+// Voice Message Recording
+const messageForm = document.getElementById("message-form");
+const recordingBar = document.getElementById("recording-bar");
+const recTimer = document.getElementById("rec-timer");
+
+const recorder = createVoiceRecorder({
+  onTick: (sec) => {
+    recTimer.textContent = formatDuration(sec);
+  },
+  onAutoStop: () => sendVoiceNote()
+});
+
+function showRecordingUI(active) {
+  messageForm.classList.toggle("hidden", active);
+  recordingBar.classList.toggle("hidden", !active);
+}
+
+document.getElementById("btn-mic").onclick = async () => {
+  if (!activePartner) return;
+  try {
+    await recorder.start();
+    showRecordingUI(true);
+  } catch (err) {
+    alert("Microphone access denied or unavailable: " + err.message);
+  }
+};
+
+document.getElementById("btn-rec-cancel").onclick = () => {
+  recorder.cancel();
+  showRecordingUI(false);
+};
+
+async function sendVoiceNote() {
+  showRecordingUI(false);
+  uploadStatus.textContent = "Sending voice message...";
+  uploadStatus.classList.remove("hidden");
+
+  try {
+    const result = await recorder.stop();
+    if (result && result.fileData) {
+      await pushMessage(
+        {
+          type: "audio",
+          fileData: result.fileData,
+          duration: formatDuration(result.duration)
+        },
+        `🎤 Voice (${formatDuration(result.duration)})`
+      );
+    }
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    uploadStatus.classList.add("hidden");
+  }
+}
+
+document.getElementById("btn-rec-send").onclick = sendVoiceNote;
+
 
 // Auto-Login on Page Refresh
 (async function initSession() {
