@@ -533,3 +533,79 @@ body {
   .msg { max-width: 84%; }
   .media-btn { width: 34px; height: 34px; }
 }
+
+
+/* Voice Message Button & Recording Bar */
+.btn-mic {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--saffron-soft);
+  color: var(--saffron-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.12s;
+}
+.btn-mic:hover { background: #FFE3C6; }
+.btn-mic:active { transform: scale(0.92); }
+
+.recording-bar {
+  padding: 10px 14px;
+  background: #FFF6EE;
+  border-top: 1px solid var(--saffron-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.rec-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 14.5px;
+}
+
+.rec-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #EF4444;
+  animation: pulseDot 1s infinite;
+}
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
+}
+
+.rec-label { color: var(--muted); font-weight: 500; font-size: 13px; }
+
+.btn-rec-cancel {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: #FEE2E2;
+  color: #DC2626;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Audio Player inside Chat Bubble */
+.msg-audio {
+  width: 230px;
+  max-width: 100%;
+  height: 38px;
+  display: block;
+  margin-bottom: 2px;
+  border-radius: 20px;
+}
