@@ -609,3 +609,17 @@ body {
   margin-bottom: 2px;
   border-radius: 20px;
 }
+
+/* Dynamic Input Bar (Typing onujayi button toggle) */
+#message-form .btn-send {
+  display: none;
+}
+
+#message-form.typing .media-actions,
+#message-form.typing .btn-mic {
+  display: none;
+}
+
+#message-form.typing .btn-send {
+  display: flex;
+}
