@@ -317,13 +317,24 @@ async function pushMessage(payload, previewLabel) {
   ]);
 }
 
+// Typing onujayi Send ar Media button toggle kora
+const msgFormEl = document.getElementById("message-form");
+const msgInputEl = document.getElementById("message-input");
+
+function updateInputBarState() {
+  const hasText = msgInputEl.value.trim().length > 0;
+  msgFormEl.classList.toggle("typing", hasText);
+}
+
+msgInputEl.addEventListener("input", updateInputBarState);
+
 // Send Text Message
-document.getElementById("message-form").addEventListener("submit", async (e) => {
+msgFormEl.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const input = document.getElementById("message-input");
-  const text = input.value.trim();
+  const text = msgInputEl.value.trim();
   if (!text) return;
-  input.value = "";
+  msgInputEl.value = "";
+  updateInputBarState();
   await pushMessage({ type: "text", text }, text);
 });
 
